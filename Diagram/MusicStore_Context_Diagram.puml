@@ -1,0 +1,22 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+!define FONTAWESOME https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5
+!include FONTAWESOME/users.puml
+
+LAYOUT_TOP_DOWN()
+LAYOUT_WITH_LEGEND()
+SHOW_PERSON_OUTLINE()
+
+title System Context Diagram for Music Store System
+
+Person(customer, "Customer", "Browses catalog and places orders")
+Person(manager, "Store Manager", "Manages store locations, inventory & pricing")
+Person(admin, "Administrator", "Configures system settings and monitors health")
+
+System(musicstore_system, "Music Store System", "Allows customers to browse the catalog, find store locations, and place orders")
+
+Rel(customer, musicstore_system, "Uses")
+Rel(manager, musicstore_system, "Maintains stores & inventory via")
+Rel(admin, musicstore_system, "Administers & monitors via")
+
+@enduml

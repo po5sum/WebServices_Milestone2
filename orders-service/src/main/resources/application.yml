@@ -1,0 +1,79 @@
+# Default Spring Profile
+server:
+  error:
+    include-message: always      # always include reason in JSON error response
+
+logging:
+  level:
+    root: INFO
+    com.musicstore: DEBUG
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
+    org.mongodb.driver: DEBUG
+    org.springframework.data.mongodb.embedded: DEBUG
+
+---
+
+#for test
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  data:
+    mongodb:
+      username: user
+      password: pwd
+      host: localhost
+      port: 0                 # flapdoodle chooses a free port
+      database: orders-db
+      authentication-database: admin
+      auto-index-creation: true
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 5.0.5
+
+app:
+  customers-service:
+    host: localhost
+    port: 7001
+  musiccatalog-service:
+    host: localhost
+    port: 7002
+  storelocation-service:
+    host: localhost
+    port: 7003
+
+---
+# for docker
+
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  data:
+    mongodb:
+      username: user
+      password: pwd
+      host: mongodb            # docker-compose service name
+      port: 27017
+      database: orders-db
+      authentication-database: admin
+      auto-index-creation: true
+
+server:
+  port: 8080
+
+app:
+  customers-service:
+    host: customers-service
+    port: 8080
+  musiccatalog-service:
+    host: musiccatalog-service
+    port: 8080
+  storelocation-service:
+    host: storelocation-service
+    port: 8080

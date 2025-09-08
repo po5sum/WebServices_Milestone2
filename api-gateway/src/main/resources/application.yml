@@ -1,0 +1,53 @@
+# Default Spring Profile
+server:
+  error:
+    include-message: always
+
+logging:
+  level:
+    root: INFO
+    com.musicstore: DEBUG
+
+app:
+  customers-service:
+    host: localhost
+    port: 7001
+
+  musiccatalog-service:
+    host: localhost
+    port: 7002
+
+  storelocation-service:
+    host: localhost
+    port: 7003
+
+  orders-service:
+    host: localhost
+    port: 7004
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+server:
+  port: 8080
+
+app:
+  customers-service:
+    host: customers-service
+    port: 8080
+
+  musiccatalog-service:
+    host: musiccatalog-service
+    port: 8080
+
+  storelocation-service:
+    host: storelocation-service
+    port: 8080
+
+  orders-service:
+    host: orders-service
+    port: 8080

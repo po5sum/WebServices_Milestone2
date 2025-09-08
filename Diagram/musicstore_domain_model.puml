@@ -1,0 +1,268 @@
+@startuml
+hide circle
+top to bottom direction
+
+scale 0.2
+!define ENTITY(entityName) class entityName << Entity >>
+!define AGGREGATE_ROOT(aggregateRootName) class aggregateRootName << Aggregate Root >>
+!define VALUE_OBJECT(valueObjectName) class valueObjectName << Value Object >>
+!define ENUM(enumName) class enumName << Enum >>
+!pragma useVerticalIf on
+skinparam dpi 350
+skinparam packageStyle rectangle
+skinparam rectangle {
+    BackgroundColor #f7f4eb
+    BorderColor Black
+}
+
+rectangle "Music Store" as BoundedContextMusicStore #line.dashed {
+
+    ' --- Music Catalog ---
+    rectangle "Music Catalog Bounded Context" as MusicCatalogContext #LightBlue {
+        Package "Music Catalog Sub-Domain" <<Rectangle>> {
+            ENTITY(Artist) #lightpink {
+                artistId: UUID
+                name: String
+                biography: String
+            }
+
+            ENTITY(Album) #lightpink {
+                albumId: UUID
+                title: String
+                releaseDate: String
+                artistId: UUID
+                genre: GenreEnum
+            }
+
+            ENUM(GenreEnum) {
+                ROCK
+                POP
+                JAZZ
+                CLASSICAL
+                HIP_HOP
+            }
+            ENUM(Status) {
+                    NEW
+                    USED
+                    BARGAIN
+                    COLLECTOR
+                    UNAVAILABLE
+            }
+
+            VALUE_OBJECT(AlbumIdentifier) #Bisque {
+                albumId: UUID
+            }
+            VALUE_OBJECT(AlbumInformation) #Bisque {
+                albumTitle: String
+                releaseYear: Int
+                albumLength: String
+            }
+            VALUE_OBJECT(ArtistInformation) #Bisque {
+                artistName: String
+                debutYear: Int
+                country: String
+                biography: String
+            }
+            VALUE_OBJECT(ArtistIdentifier) #Bisque {
+                artistId: UUID
+            }
+
+            ArtistInformation --> Artist
+            AlbumInformation --> Album
+            ArtistIdentifier --> Artist
+            AlbumIdentifier --> Album
+            Album "1" o--> "0..*" ArtistIdentifier
+            GenreEnum --> Album
+            Status --> Album
+        }
+    }
+
+    ' --- Customer ---
+    rectangle "Customer Bounded Context" as CustomerContext #brown {
+        Package "Customer Sub-Domain" <<Rectangle>> {
+            AGGREGATE_ROOT(Customer) #lightblue {
+                        firstName: String
+                        lastName: String
+                        email: String
+                        contactMethodPreference: ContactMethodEnum
+                    }
+
+                    VALUE_OBJECT(CustomerIdentifier) #Bisque{
+                        customerId: UUID
+                    }
+
+                    ENUM(ContactMethodEnum) {
+                        EMAIL
+                        PHONE
+                        TEXT
+                    }
+
+                     VALUE_OBJECT(CustomerAddress) #Bisque{
+                             streetNumber : String
+                             streetName: String
+                             city: String
+                             province: ProvinceEnum
+                             postalCode: String
+                             }
+
+                     VALUE_OBJECT(CustomerPhoneNumber) #Bisque{
+                            type: PhoneTypeEnum
+                            phoneNumber: String
+                     }
+
+
+                    VALUE_OBJECT(CommunicationIdentifier) #Bisque{
+                        communicationId: UUID
+                    }
+
+                    Customer --> CustomerIdentifier
+                           Customer "1" o--> "1" CustomerAddress
+                           Customer "1" o--> "1..*" CustomerPhoneNumber
+                            Customer --> ContactMethodEnum
+                            Customer "1" o--> "0..*" CommunicationIdentifier
+
+        }
+    }
+
+    ' --- Store Location ---
+    rectangle "Store Location Bounded Context" as StoreLocationContext #LightGreen {
+        Package "Store Location Sub-Domain" <<Rectangle>> {
+            ENTITY(Store) #lightpink {
+                storeId: UUID
+                name: String
+                address: String
+            }
+
+            VALUE_OBJECT(StoreIdentifier) #Bisque {
+                storeId: UUID
+            }
+            VALUE_OBJECT(StoreInformation) #Bisque {
+                ownerName: String
+                managerName: String
+                storeRating: Double
+                openHours: String
+                phoneNumber: String
+            }
+            VALUE_OBJECT(StoreAddress) #Bisque {
+                street: String
+                city: String
+                province: String
+                country: String
+            }
+
+            StoreAddress --> Store
+            StoreInformation --> Store
+            StoreIdentifier --> Store
+        }
+    }
+
+
+
+    ' --- Inventory (Self-contained, no dependencies on other subdomains) ---
+    rectangle "Inventory Bounded Context" as InventoryContext #LightGray {
+        Package "Inventory Sub-Domain" <<Rectangle>> {
+            AGGREGATE_ROOT(Inventory) #lightpink {
+                inventoryId: UUID
+                itemCode: String       ' local identification for the inventory item
+                availableQuantity: Int
+                reorderThreshold: Int
+            }
+
+            VALUE_OBJECT(InventoryIdentifier) #Bisque {
+                inventoryId: UUID
+            }
+            VALUE_OBJECT(StockInformation) #Bisque {
+                availableQuantity: Int
+                reorderThreshold: Int
+            }
+            ENUM(AvailabilityEnum){
+                AVAILABLE
+                OUT_OF_STOCK
+            }
+
+            InventoryIdentifier --> Inventory
+            StockInformation --> Inventory
+            AvailabilityEnum --> Inventory
+
+
+        }
+    }
+
+    ' --- Reviews (Self-contained, using local value objects) ---
+    rectangle "Reviews Bounded Context" as ReviewsContext #LightGray {
+        Package "Reviews Sub-Domain" <<Rectangle>> {
+            AGGREGATE_ROOT(Review) #lightpink {
+                reviewId: UUID
+                rating: Int
+                comment: String
+                reviewDate: String
+            }
+
+            VALUE_OBJECT(ReviewIdentifier) #Bisque {
+                reviewId: UUID
+            }
+            VALUE_OBJECT(ReviewedAlbum) #Bisque {
+                albumTitle: String
+                albumGenre: String
+            }
+            VALUE_OBJECT(Reviewer) #Bisque {
+                reviewerName: String
+                reviewerEmail: String
+            }
+
+
+            ReviewIdentifier --> Review
+            ReviewedAlbum --> Review
+            Reviewer --> Review
+        }
+    }
+        ' --- Orders (Allowed to take values from other subdomains) ---
+        rectangle "Orders Bounded Context" as OrdersContext #LightCoral {
+            Package "Orders Aggregate" <<Rectangle>> {
+                AGGREGATE_ROOT(Order) #lightpink {
+                    orderId: UUID
+                    customerId: UUID       ' from Customer subdomain
+                    albumId: UUID          ' from Music Catalog subdomain
+                    storeId: UUID          ' from Store Location subdomain
+                    orderDate: String
+                    orderPrice: Double
+                    status: OrderStatusEnum
+                }
+
+                ENUM(OrderStatusEnum) {
+                    PENDING
+                    SHIPPED
+                    DELIVERED
+                    CANCELLED
+                }
+                ENUM(PaymentMethodEnum) {
+                    PAYPAL
+                    CREDIT_CARD
+                    CASH
+                    GIFT_CARD
+                    DEBIT_CARD
+                    CHEQUE
+                }
+
+                VALUE_OBJECT(OrderIdentifier) #Bisque {
+                    orderId: UUID
+                }
+
+                PaymentMethodEnum --> Order
+                OrderIdentifier --> Order
+                OrderStatusEnum --> Order
+                Order --> CustomerIdentifier
+                Order --> AlbumIdentifier
+                Order --> StoreIdentifier
+                Order --> InventoryIdentifier
+                Order --> ReviewIdentifier
+
+                note right of Order
+                              Aggregate Invariant: when an order price is set to less than 10,
+                               the albumStatus is set to BARAGAIN
+                            end note
+            }
+        }
+}
+@enduml
+

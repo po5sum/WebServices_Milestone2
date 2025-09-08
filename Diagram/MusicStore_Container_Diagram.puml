@@ -1,0 +1,58 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+!define FONTAWESOME https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5
+!include FONTAWESOME/users.puml
+
+AddElementTag("microService", $shape=EightSidedShape(), $bgColor="CornflowerBlue", $fontColor="white", $legendText="micro service\neight sided")
+AddElementTag("storage", $shape=RoundedBoxShape(), $bgColor="lightSkyBlue", $fontColor="white")
+LAYOUT_TOP_DOWN()
+title Container Diagram for Music Store System
+
+System_Boundary(c1, "Music Store System") {
+
+  Person(customer, "Customer", "Browses catalog & places orders")
+  Person(manager, "Store Manager", "Updates store locations & inventory")
+  Person(admin, "Administrator", "Configures system & monitors health")
+
+  Container(web_app, "Web Application", "JavaScript, React", "Delivers static content & SSR pages")
+  Container(singlepage_app, "Single-Page Application", "JavaScript, React", "Customer-facing SPA")
+  Container(api_gateway, "API Gateway", "Java, Spring Boot", "Routes REST/HTTPS (JSON) calls to services", $tags="microService")
+
+  Container(customers_service, "Customers Service", "Java, Spring Boot", "Manages customer profiles", $tags="microService")
+  Container(musiccatalog_service, "Music Catalog Service", "Java, Spring Boot", "Handles product listings & search", $tags="microService")
+  Container(storelocation_service, "Store Location Service", "Java, Spring Boot", "Provides store info & availability", $tags="microService")
+  Container(orders_service, "Orders Service", "Java, Spring Boot", "Handles customer orders & history", $tags="microService")
+
+  ContainerDb(customers_db, "Customers DB", "MySQL 5.7", "Stores customer data", $tags="storage")
+  ContainerDb(musiccatalog_db, "Music Catalog DB", "MySQL 5.7", "Stores product metadata", $tags="storage")
+  ContainerDb(storelocation_db, "Store Location DB", "PostgreSQL", "Stores store & inventory data", $tags="storage")
+  ContainerDb(orders_db, "Orders DB", "MongoDB", "Stores order details & history", $tags="storage")
+}
+
+' Actors → Front-end
+Rel(customer, web_app,           "Visits via",                "HTTPS")
+Rel(manager, web_app,            "Uses admin UI via",         "HTTPS")
+Rel(admin, web_app,              "Monitors/configures via",   "HTTPS")
+
+' Front-end → Containers
+Rel_R(web_app, singlepage_app,   "Serves SPA",                "HTTPS")
+Rel(singlepage_app, api_gateway, "API calls",                 "REST/HTTPS (JSON)")
+
+' API Gateway → Microservices
+Rel(api_gateway, customers_service,     "Routes to", "REST/HTTPS (JSON)")
+Rel(api_gateway, musiccatalog_service,  "Routes to", "REST/HTTPS (JSON)")
+Rel(api_gateway, storelocation_service, "Routes to", "REST/HTTPS (JSON)")
+Rel(api_gateway, orders_service,        "Routes to", "REST/HTTPS (JSON)")
+
+' Microservices → Datastores
+Rel_D(customers_service,     customers_db,     "Reads/Writes", "JDBC/SQL")
+Rel_D(musiccatalog_service,  musiccatalog_db,  "Reads/Writes", "JDBC/SQL")
+Rel_D(storelocation_service, storelocation_db, "Reads/Writes", "JDBC/SQL")
+Rel_D(orders_service,        orders_db,        "Reads/Writes", "MongoDB API")
+
+' Orders service → Downstream services (as an aggregator)
+Rel(orders_service, customers_service,     "Fetches customer info",     "REST/HTTPS (JSON)")
+Rel(orders_service, musiccatalog_service,  "Fetches product info",      "REST/HTTPS (JSON)")
+Rel(orders_service, storelocation_service, "Checks inventory/status",   "REST/HTTPS (JSON)")
+
+@enduml
